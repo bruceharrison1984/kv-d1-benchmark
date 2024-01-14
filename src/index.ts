@@ -1,32 +1,35 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
-
 export interface Env {
-	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-	// MY_KV_NAMESPACE: KVNamespace;
-	//
-	// Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-	// MY_DURABLE_OBJECT: DurableObjectNamespace;
-	//
-	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-	// MY_BUCKET: R2Bucket;
-	//
-	// Example binding to a Service. Learn more at https://developers.cloudflare.com/workers/runtime-apis/service-bindings/
-	// MY_SERVICE: Fetcher;
-	//
-	// Example binding to a Queue. Learn more at https://developers.cloudflare.com/queues/javascript-apis/
-	// MY_QUEUE: Queue;
+	KV: KVNamespace;
+	DB: D1Database;
 }
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		return new Response('Hello World!');
+		console.log('bootstrap D1 if necessary');
+		await env.DB.exec('CREATE TABLE IF NOT EXISTS benchmark(NAME TEXT NOT NULL)');
+
+		const kv_insert = await measureTime(async () => await env.KV.put('test', 'some-value'));
+		const d1_insert = await measureTime(async () => await env.DB.exec(`INSERT INTO benchmark (NAME) VALUES ('test')`));
+
+		const kv_read = await measureTime(async () => await env.KV.get('test'));
+		const d1_read = await measureTime(async () => await env.DB.exec(`SELECT * FROM benchmark`));
+
+		const kv_insert_and_propagate = await measureTime(async () => {
+			const id = crypto.randomUUID();
+			await env.KV.put(id, 'some-value');
+
+			let result = null;
+			while (!result) {
+				result = await env.KV.get(id);
+			}
+		});
+
+		return new Response(JSON.stringify({ kv_insert, kv_read, d1_insert, d1_read, kv_insert_and_propogate: kv_insert_and_propagate }));
 	},
+};
+
+const measureTime = async (func: () => any | Promise<any>) => {
+	const start = performance.now();
+	await func();
+	return performance.now() - start;
 };
