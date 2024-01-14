@@ -24,12 +24,22 @@ export default {
 			}
 		});
 
-		return new Response(JSON.stringify({ kv_insert, kv_read, d1_insert, d1_read, kv_insert_and_propogate: kv_insert_and_propagate }));
+		const d1_insert_and_propagate = await measureTime(async () => {
+			const id = crypto.randomUUID();
+			await measureTime(async () => await env.DB.exec(`INSERT INTO benchmark (NAME) VALUES ('${id}')`));
+
+			let result = null;
+			while (!result) {
+				result = await await env.DB.exec(`SELECT * FROM benchmark WHERE NAME = '${id}'`);
+			}
+		});
+
+		return new Response(JSON.stringify({ kv_insert, kv_read, kv_insert_and_propagate, d1_insert, d1_read, d1_insert_and_propagate }));
 	},
 };
 
 const measureTime = async (func: () => any | Promise<any>) => {
 	const start = performance.now();
 	await func();
-	return performance.now() - start;
+	return `${performance.now() - start}ms`;
 };
