@@ -26,7 +26,7 @@ export default {
 
 		const d1_insert_and_propagate = await measureTime(async () => {
 			const id = crypto.randomUUID();
-			await measureTime(async () => await env.DB.exec(`INSERT INTO benchmark (NAME) VALUES ('${id}')`));
+			await env.DB.exec(`INSERT INTO benchmark (NAME) VALUES ('${id}')`);
 
 			let result = null;
 			while (!result) {
