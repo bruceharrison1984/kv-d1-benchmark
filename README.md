@@ -6,7 +6,7 @@ is a very simple comparision, using only a single zone (assumedly).
 
 ## Results
 
-The results seem to show that D1 is at least as fast as KV, and in most cases faster. This doesn't take into account cross-region
+The results seem to show that D1 is at least as fast as KV, and in some cases faster. This doesn't take into account cross-region
 propagation delays, since I don't know of a good way to test that easily.
 
 I'd refrain from drawing any other big conclusions from this data, this is a very simple test.
@@ -21,6 +21,9 @@ _`insert_and_propagate` tests will insert a value, then query within a loop unti
 | d1_insert               | Insert value into D1               | 45ms  |
 | d1_read                 | Read existing value from D1        | 16ms  |
 | d1_insert_and_propagate | Insert and read value back from D1 | 66ms  |
+
+These times seem to vary quite a bit depending on the geo-location of the user hitting the end point, so I would recommend conducting 
+your own tests before blinding accepting these results.
 
 ## Setup
 
